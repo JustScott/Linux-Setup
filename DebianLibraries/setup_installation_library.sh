@@ -130,22 +130,49 @@ remove_setup_user_scripts()
     return 0
 }
 
-
+QEMU_PACKAGES=(
+    virt-manager virt-viewer qemu-system qemu-system-gui qemu-utils swtpm
+    spice-vdagent libvirt-daemon-system libvirt-clients dnsmasq
+)
 setup_qemu() 
 {
-    printf "\n\e[33m%s\e[0m\n %s" "[Skipping]" \
-        "The qemu setup is not supported on your distro. Skipping."
+    if ! dpkg -s ${QEMU_PACKAGES[@]} &>/dev/null
+    then
+        sudo -v || return 1
+        sudo apt-get install --yes ${QEMU_PACKAGES[@]} \
+            >>"$STDOUT_LOG_PATH" 2>>"$STDERR_LOG_PATH" &
+        task_output $! "$STDERR_LOG_PATH" "Install qemu packages"
+        [[ $? -ne 0 ]] && return 1
+    else
+        printf "\r\e[33m[skipping...]\e[0m %s\n" \
+            "Qemu packages already installed"
+    fi
 
-    return 1
+    # Allows currently plugged in USB devices, so doesn't really make
+    # sense to be in the setup
+    #sudo chmod g+rwx -R /dev/bus/usb
+
+    printf "\n\n\e[36m%s\e[0m\n\n" \
+        "[!] Now you must run \`sudo usermod -aG libvirt \"username\"\`"
+
+    return 0
 }
 remove_setup_qemu() 
 {
-    printf "\n\e[33m%s\e[0m\n %s" "[Skipping]" \
-        "The qemu setup is not configured on your system. Skipping."
+    for package in ${QEMU_PACKAGES[@]}
+    do
+        if dpkg -s $package &>/dev/null
+        then
+            sudo -v || return 1
+            sudo apt-get purge --yes $package \
+                >>"$STDOUT_LOG_PATH" 2>>"$STDERR_LOG_PATH" &
+            task_output $! "$STDERR_LOG_PATH" "Uninstalling package: $package"
+            [[ $? -ne 0 ]] && return 1
+        fi
+    done
 
-    return 1
+    return 0
 }
-
 
 setup_security()
 {

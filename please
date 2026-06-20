@@ -51,7 +51,7 @@ INSTALLABLE_PACKAGES=(
     qutebrowser rust python flatpak
 )
 SETUP_OPTIONS=(
-    base_packages host_packages user-scripts media gnome
+    base_packages host_packages user-scripts media gnome qemu
 )
 
 if ((ARCH_SYSTEM))
@@ -61,14 +61,17 @@ then
     )
     SETUP_OPTIONS+=(
         security audio bluetooth
-        gaming qemu 3d-printing
-        embedded-rust rust-dioxus
+        gaming 3d-printing embedded-rust rust-dioxus
     )
 
     PACKAGE_INSTALLATION_LIBRARY=./ArchLibraries/package_installation_library.sh
     SETUP_INSTALLATION_LIBRARY=./ArchLibraries/setup_installation_library.sh
 elif ((DEBIAN_SYSTEM))
 then
+    INSTALLABLE_PACKAGES+=(
+        librewolf
+    )
+
     PACKAGE_INSTALLATION_LIBRARY=./DebianLibraries/package_installation_library.sh
     SETUP_INSTALLATION_LIBRARY=./DebianLibraries/setup_installation_library.sh
 else
@@ -278,6 +281,7 @@ display_help() {
     printf "\n\nExamples:"
     printf "\n  \`$SCRIPT_NAME install --list\`"
     printf "\n  \`$SCRIPT_NAME install qutebrowser\`"
+    printf "\n  \`$SCRIPT_NAME install librewolf\`"
     printf "\n  \`$SCRIPT_NAME install rust qemu docker\`"
     printf "\n  \`$SCRIPT_NAME uninstall qutebrowser\`"
     printf "\n  \`$SCRIPT_NAME setup base_packages gnome bluetooth\`"
@@ -391,6 +395,14 @@ install() {
                     exit 1
                 fi
             ;;
+            "librewolf")
+                if ! install_librewolf
+                then
+                    printf "\n\e[31m%s\e[0m\n" \
+                        "[!] Failed to install librewolf"
+                    exit 1
+                fi
+            ;;
             "docker")
                 if ! install_docker
                 then
@@ -489,6 +501,13 @@ uninstall() {
                 then
                     printf "\n\e[31m%s\e[0m\n" \
                         "[!] Failed to uninstall qutebrowser"
+                fi
+            ;;
+            "librewolf")
+                if ! uninstall_librewolf
+                then
+                    printf "\n\e[31m%s\e[0m\n" \
+                        "[!] Failed to uninstall librewolf"
                 fi
             ;;
             "docker")
