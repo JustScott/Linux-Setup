@@ -98,7 +98,7 @@ install_python()
     if ! dpkg -s ${PYTHON_PACKAGES[@]} &>/dev/null
     then
         sudo -v || return 1
-        sudo apt-get install ${PYTHON_PACKAGES[@]} \
+        sudo apt-get install --yes ${PYTHON_PACKAGES[@]} \
             >>"$STDOUT_LOG_PATH" 2>>"$STDERR_LOG_PATH" &
         task_output $! "$STDERR_LOG_PATH" "Installing python"
         [[ $? -ne 0 ]] && return 1 
@@ -115,7 +115,7 @@ uninstall_python()
         if dpkg -s $package &>/dev/null
         then
             sudo -v || return 1
-            sudo apt-get uninstall --yes $package \
+            sudo apt-get remove --yes $package \
                 >>"$STDOUT_LOG_PATH" 2>>"$STDERR_LOG_PATH" &
             task_output $! "$STDERR_LOG_PATH" "Uninstalling package: $package"
             [[ $? -ne 0 ]] && return 1
@@ -213,7 +213,7 @@ uninstall_flatpak()
 {
     if dpkg -s flatpak &>/dev/null; then
         sudo -v || return 1
-        sudo apt-get uninstall --yes flatpak \
+        sudo apt-get remove --yes flatpak \
             >>"$STDOUT_LOG_PATH" 2>>"$STDERR_LOG_PATH" &
         task_output $! "$STDERR_LOG_PATH" \
             "Remove flatpak"
@@ -249,7 +249,7 @@ install_librewolf()
         task_output $! "$stderr_log_path" "Update apt again"
         [[ $? -ne 0 ]] && return 1
 
-        sudo apt-get install librewolf -y >>"$stdout_log_path" 2>>"$stderr_log_path" &
+        sudo apt-get install librewolf --yes >>"$stdout_log_path" 2>>"$stderr_log_path" &
         task_output $! "$stderr_log_path" "Install librewolf"
         [[ $? -ne 0 ]] && return 1
     fi
