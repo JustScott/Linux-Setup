@@ -229,27 +229,27 @@ install_librewolf()
     then
         sudo -v || return 1
 
-        sudo apt-get update >>"$stdout_log_path" 2>>"$stderr_log_path" &
+        sudo apt-get update >>"$STDOUT_LOG_PATH" 2>>"$STDERR_LOG_PATH" &
         task_output $! "$stderr_log_path" "Update apt"
         [[ $? -ne 0 ]] && return 1
 
-        sudo apt-get install extrepo --yes >>"$stdout_log_path" 2>>"$stderr_log_path" &
+        sudo apt-get install extrepo --yes >>"$STDOUT_LOG_PATH" 2>>"$STDERR_LOG_PATH" &
         task_output $! "$stderr_log_path" "Add extrepo (contains librewolf)"
         [[ $? -ne 0 ]] && return 1
 
-        sudo extrepo enable librewolf >>"$stdout_log_path" 2>>"$stderr_log_path" &
+        sudo extrepo enable librewolf >>"$STDOUT_LOG_PATH" 2>>"$STDERR_LOG_PATH" &
         task_output $! "$stderr_log_path" "Enable librewolf repo"
         [[ $? -ne 0 ]] && return 1
 
-        sudo extrepo update librewolf >>"$stdout_log_path" 2>>"$stderr_log_path" &
+        sudo extrepo update librewolf >>"$STDOUT_LOG_PATH" 2>>"$STDERR_LOG_PATH" &
         task_output $! "$stderr_log_path" "Update the librewolf repo"
         [[ $? -ne 0 ]] && return 1
 
-        sudo apt-get update >>"$stdout_log_path" 2>>"$stderr_log_path" &
+        sudo apt-get update >>"$STDOUT_LOG_PATH" 2>>"$STDERR_LOG_PATH" &
         task_output $! "$stderr_log_path" "Update apt again"
         [[ $? -ne 0 ]] && return 1
 
-        sudo apt-get install librewolf --yes >>"$stdout_log_path" 2>>"$stderr_log_path" &
+        sudo apt-get install librewolf --yes >>"$STDOUT_LOG_PATH" 2>>"$STDERR_LOG_PATH" &
         task_output $! "$stderr_log_path" "Install librewolf"
         [[ $? -ne 0 ]] && return 1
     fi
@@ -262,11 +262,11 @@ uninstall_librewolf()
     then
         sudo -v || return 1
 
-        sudo apt-get purge librewolf --yes >>"$stdout_log_path" 2>>"$stderr_log_path" &
+        sudo apt-get purge librewolf --yes >>"$STDOUT_LOG_PATH" 2>>"$STDERR_LOG_PATH" &
         task_output $! "$stderr_log_path" "Purge librewolf from the system"
         [[ $? -ne 0 ]] && return 1
 
-        sudo extrepo disable librewolf >>"$stdout_log_path" 2>>"$stderr_log_path" &
+        sudo extrepo disable librewolf >>"$STDOUT_LOG_PATH" 2>>"$STDERR_LOG_PATH" &
         task_output $! "$stderr_log_path" "Disable librewolf from the extrepo"
         [[ $? -ne 0 ]] && return 1
     fi
