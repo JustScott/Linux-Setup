@@ -24,7 +24,7 @@ PRETTY_OUTPUT_LIBRARY="./GeneralLibraries/pretty_output_library.sh"
 if ! source "$PRETTY_OUTPUT_LIBRARY" &>/dev/null
 then
     printf "\n\e[31m%s\e[0m %s\n" "[Error]" \
-        "Could'nt source '$PRETTY_OUTPUT_LIBRARY', this shouldn't happen. Stopping."
+        "Couldn't source '$PRETTY_OUTPUT_LIBRARY', this shouldn't happen. Stopping."
     exit 1
 fi
 

@@ -29,6 +29,15 @@ REQUIRED_PACKAGES=(
     usermod gpasswd groups groupadd groupdel
 )
 
+PRETTY_OUTPUT_LIBRARY="${linux_setup_directory}/GeneralLibraries/pretty_output_library.sh"
+
+if ! source "$PRETTY_OUTPUT_LIBRARY" &>/dev/null
+then
+    printf "\n\e[31m%s\e[0m %s\n" "[Error]" \
+        "Couldn't source '$PRETTY_OUTPUT_LIBRARY', this shouldn't happen. Stopping."
+    exit 1
+fi
+
 ARCH_SYSTEM=0
 DEBIAN_SYSTEM=0
 
@@ -51,7 +60,7 @@ INSTALLABLE_PACKAGES=(
     qutebrowser rust python flatpak
 )
 SETUP_OPTIONS=(
-    base_packages host_packages user-scripts media gnome qemu
+    base_packages host_packages media gnome qemu
 )
 
 if ((ARCH_SYSTEM))
@@ -84,19 +93,19 @@ PRETTY_OUTPUT_LIBRARY=./GeneralLibraries/pretty_output_library.sh
 
 CONFIG_INSTALL_SCRIPT=./install_configurations.sh
 
-if ! echo "$@" | grep "add-to-path" &>/dev/null
+if ! echo "$@" | grep "add-please-to-path" &>/dev/null
 then
     if ! [[ -d "$linux_setup_directory" ]]
     then
         printf "\n\e[31m%s\n%s\n%s\e[0m\n" \
             "[!] '\$linux_setup_directory' variable not set, or not set to" \
             "    the correct directory path. Either way, \`cd\` into the" \
-            "    '$PROJECT_NAME' directory and run \`$SCRIPT_NAME add-to-path\`."
+            "    '$PROJECT_NAME' directory and run \`$SCRIPT_NAME add-please-to-path\`."
         exit $4
     fi
 fi
 
-add_to_path() {
+add_please_to_path() {
     if [[ $(basename $(pwd)) == "$PROJECT_NAME" ]]
     then
         bashrc_line="export linux_setup_directory=\"$(pwd)\""
@@ -196,6 +205,31 @@ add_to_path() {
     fi
 }
 
+add_user_scripts_to_path()
+{
+    if ! [[ -d "$linux_setup_directory" ]]
+    then
+        printf "\n\e[31m%s\n%s\n%s\e[0m\n" \
+            "[!] '\$linux_setup_directory' variable not set, or not set to" \
+            "    the correct directory path. Either way, \`cd\` into the" \
+            "    '$PROJECT_NAME' directory and run \`$SCRIPT_NAME add-please-to-path\`."
+        exit $4
+    fi
+
+    scripts_dir="$linux_setup_directory/ScriptsAddedToPath"
+    bashrc_line="export PATH=\"\$PATH:$scripts_dir\""
+
+    if ! grep "$bashrc_line" ${HOME}/.bashrc &>/dev/null
+    then
+        echo -e "\n$bashrc_line" >> ${HOME}/.bashrc 2>>"$STDERR_LOG_PATH" &
+        task_output $! "$STDERR_LOG_PATH" \
+            "Add the user scripts directory to \$PATH in .bashrc"
+        [[ $? -ne 0 ]] && return 1
+    fi
+
+    return 0
+}
+
 check_library_files_exist() {
     if ! [[ -f "$PRETTY_OUTPUT_LIBRARY" ]]
     then
@@ -252,6 +286,8 @@ display_help() {
     printf "\n\nCommands:"
     printf "\n  %-15s %-1s" "add-to-path" \
         "Allow executing the \`please\` script from anywhere without issue"
+    printf "\n  %-15s %-1s" "add-user-scripts-to-path" \
+        "Add my custom user-scripts to path, like move, store, etc"
     printf "\n  %-15s %-1s" "install" "Install supported software"
     printf "\n  %-15s %-1s" "uninstall" "Cleanly uninstall supported software"
     printf "\n  %-15s %-1s" "setup" "Setup the system in specific ways"
@@ -279,13 +315,15 @@ display_help() {
     printf "\n    %-20s %-1s" "-l | --list" "List available setup options"
     
     printf "\n\nExamples:"
+    printf "\n  \`$SCRIPT_NAME add-please-to-path \`"
+    printf "\n  \`$SCRIPT_NAME add-user-scripts-to-path \`"
     printf "\n  \`$SCRIPT_NAME install --list\`"
     printf "\n  \`$SCRIPT_NAME install qutebrowser\`"
     printf "\n  \`$SCRIPT_NAME install librewolf\`"
     printf "\n  \`$SCRIPT_NAME install rust qemu docker\`"
     printf "\n  \`$SCRIPT_NAME uninstall qutebrowser\`"
     printf "\n  \`$SCRIPT_NAME setup base_packages gnome bluetooth\`"
-    printf "\n  \`$SCRIPT_NAME setup security user-scripts\`"
+    printf "\n  \`$SCRIPT_NAME setup security \`"
     printf "\n  \`$SCRIPT_NAME remove-setup rust\`"
     printf "\n  \`$SCRIPT_NAME add-configs\`"
 
@@ -636,13 +674,6 @@ setup() {
                     exit 1
                 fi
             ;;
-            "user-scripts")
-                if ! setup_user_scripts
-                then
-                    printf "\n\e[31m%s\e[0m\n" \
-                        "[!] Failed to setup: user-scripts"
-                fi
-            ;;
             "qemu")
                 if ! setup_qemu
                 then
@@ -871,8 +902,10 @@ remove_setup() {
 }
 
 case $1 in
-    "add-to-path")         add_to_path ${@:2};exit ;exit 00;;
+    "add-please-to-path")          add_please_to_path;exit 0;;
+    "add-user-scripts-to-path")    add_user_scripts_to_path;exit 0;;
 esac
+
 
 cd $linux_setup_directory
 check_library_files_exist

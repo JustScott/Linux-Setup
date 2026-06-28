@@ -21,7 +21,7 @@ PRETTY_OUTPUT_LIBRARY="./GeneralLibraries/pretty_output_library.sh"
 if ! source "$PRETTY_OUTPUT_LIBRARY" &>/dev/null
 then
     printf "\n\e[31m%s\e[0m %s\n" "[Error]" \
-        "Could'nt source '$PRETTY_OUTPUT_LIBRARY', this shouldn't happen. Stopping."
+        "Couldn't source '$PRETTY_OUTPUT_LIBRARY', this shouldn't happen. Stopping."
     exit 1
 fi
 
@@ -94,41 +94,6 @@ remove_setup_host_packages()
     return 0
 }
 
-
-setup_user_scripts()
-{
-    scripts_dir="$linux_setup_directory/ScriptsAddedToPath"
-    bashrc_line="export PATH=\"\$PATH:$scripts_dir\""
-
-    if ! grep "$bashrc_line" $HOME/.bashrc &>/dev/null
-    then
-        echo -e "\n$bashrc_line" >> $HOME/.bashrc 2>>"$STDERR_LOG_PATH" &
-        task_output $! "$STDERR_LOG_PATH" \
-            "Add the user scripts directory to \$PATH in .bashrc"
-        [[ $? -ne 0 ]] && return 1
-    fi
-
-    return 0
-}
-remove_setup_user_scripts()
-{
-    if grep "export PATH=".*${PROJECT_NAME}\/ScriptsAddedToPath"" \
-        "${HOME}/.bashrc" &>/dev/null
-    then
-        if sed -i \
-            "/export PATH=\".*${PROJECT_NAME}\/ScriptsAddedToPath/d" \
-            "${HOME}/.bashrc"
-        then
-            printf "\n\e[32m%s\e[0m %s\n" "[Success]" \
-                "Remove user_scripts from path"
-        else
-            printf "\n\e[31m%s\e[0m\n" \
-                "[!] Cannot remove user-scripts from \$PATH. This shouldn't happen."
-        fi
-    fi
-
-    return 0
-}
 
 QEMU_PACKAGES=(
     virt-manager virt-viewer qemu-system qemu-system-gui qemu-utils swtpm
