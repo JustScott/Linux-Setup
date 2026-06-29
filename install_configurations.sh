@@ -148,6 +148,175 @@ configure_git()
     fi
 }
 
+configure_gnome()
+{
+    if ! command -v gsettings &>/dev/null
+    then
+        return 0
+    fi
+
+    if [[ -s "/etc/profile.d/vte.sh" ]]
+    then
+        if ! grep "^source /etc/profile.d/vte.sh$" "${HOME}/.bashrc" &>/dev/null
+        then
+            echo -e "\n#Opens new tabs in the current working directory" >> ~/.bashrc
+            echo "source /etc/profile.d/vte.sh" >> ~/.bashrc
+        fi
+    fi
+
+    declare -A shortcut_keybinds=(
+        ["Browser"]="<Alt>b"
+        ["Terminal"]="<Shift><Alt>Return"
+        ["Brightness Up"]="<Alt>Right"
+        ["Brightness Down"]="<Alt>Left"
+        ["Volume Up"]="<Alt>Up"
+        ["Volume Down"]="<Alt>Down"
+    )
+
+    declare -A shortcut_commands=(
+        ["Browser"]="xdg-open https://duckduckgo.com"
+        ["Terminal"]="gnome-terminal"
+        ["Brightness Up"]="brightnessctl set 10%+"
+        ["Brightness Down"]="brightnessctl set 10%-"
+        ["Volume Up"]="pamixer --increase 5"
+        ["Volume Down"]="pamixer --decrease 5"
+    )
+
+    keybind_locations="["
+    for ((count=0;count<${#shortcut_keybinds[@]};count++)); do
+        keybind_locations+="'/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom${count}/'"
+        if [[ $count == $((${#shortcut_keybinds[@]}-1)) ]]
+        then
+            keybind_locations+="]"
+        else
+            keybind_locations+=", "
+        fi
+    done
+
+    CUSTOM_KEYBINDINGS_URI="org.gnome.settings-daemon.plugins.media-keys custom-keybindings"
+    if [[ "$(gsettings get $CUSTOM_KEYBINDINGS_URI)" != "$keybind_locations" ]]
+    then
+        gsettings set $CUSTOM_KEYBINDINGS_URI "$keybind_locations" >>"$STDOUT_LOG_PATH" 2>>"$STDERR_LOG_PATH" &
+        task_output $! "$STDERR_LOG_PATH" "Set Keybinds Location"
+        [[ $? -ne 0 ]] && return 1
+    fi
+
+    keybind_index=0
+    for name in "${!shortcut_keybinds[@]}"
+    do
+        binding="${shortcut_keybinds[$name]}"
+        command="${shortcut_commands[$name]}"
+
+        KEYBIND_URI="org.gnome.settings-daemon.plugins.media-keys.custom-keybinding:/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom${keybind_index}/"
+
+        SHORTCUT_BINDING_URI="$KEYBIND_URI binding"
+        if [[ "$(gsettings get $SHORTCUT_BINDING_URI)" != "'$binding'" ]]
+        then
+            gsettings set $SHORTCUT_BINDING_URI "$binding" \
+                >>"$STDOUT_LOG_PATH" 2>>"$STDERR_LOG_PATH" &
+            task_output $! "$STDERR_LOG_PATH" "Set keybind: '$binding'"
+            [[ $? -ne 0 ]] && return 1
+        fi
+
+        SHORTCUT_NAME_URI="$KEYBIND_URI name"
+        if [[ "$(gsettings get $SHORTCUT_NAME_URI)" != "'$name'" ]]
+        then
+            gsettings set $SHORTCUT_NAME_URI "$name" \
+                >>"$STDOUT_LOG_PATH" 2>>"$STDERR_LOG_PATH" &
+            task_output $! "$STDERR_LOG_PATH" "Set keybind name: '$name'"
+            [[ $? -ne 0 ]] && return 1
+        fi
+
+        SHORTCUT_COMMAND_URI="$KEYBIND_URI command"
+        if [[ "$(gsettings get $SHORTCUT_COMMAND_URI)" != "'$command'" ]]
+        then
+            gsettings set $SHORTCUT_COMMAND_URI "$command" \
+                >>"$STDOUT_LOG_PATH" 2>>"$STDERR_LOG_PATH" &
+            task_output $! "$STDERR_LOG_PATH" "Set keybind command: '$command'"
+            [[ $? -ne 0 ]] && return 1
+        fi
+
+        ((keybind_index++))
+    done
+
+    CLOSE_WINDOW_URI="org.gnome.desktop.wm.keybindings close"
+    if [[ "$(gsettings get $CLOSE_WINDOW_URI)" != "['<Shift><Alt>c']" ]]
+    then
+        gsettings set $CLOSE_WINDOW_URI "['<Shift><Alt>c']" \
+            >>"$STDOUT_LOG_PATH" 2>>"$STDERR_LOG_PATH" &
+        task_output $! "$STDERR_LOG_PATH" "Change close window from Alt+F4 to <Shift><Alt>c"
+    fi
+
+    COLOR_SCHEME_URI="org.gnome.desktop.interface color-scheme"
+    if [[ "$(gsettings get $COLOR_SCHEME_URI)" != "'prefer-dark'" ]]
+    then
+        gsettings set $COLOR_SCHEME_URI "'prefer-dark'" \
+            >>"$STDOUT_LOG_PATH" 2>>"$STDERR_LOG_PATH" &
+        task_output $! "$STDERR_LOG_PATH" "Set Desktop Color Theme to Dark"
+    fi
+
+    TERMINAL_PROFILE_ID=$(gsettings get org.gnome.Terminal.ProfilesList default | tr -d \')
+    TERMINAL_PROFILE_URI="org.gnome.Terminal.Legacy.Profile:/org/gnome/terminal/legacy/profiles:/:${TERMINAL_PROFILE_ID}/"
+
+    if [[ -n $TERMINAL_PROFILE_ID ]]
+    then
+        TERMINAL_FONT="$TERMINAL_PROFILE_URI font"
+        if [[ "$(gsettings get $TERMINAL_FONT)" != "'Monospace 14'" ]]
+        then
+            gsettings set $TERMINAL_FONT "'Monospace 14'" \
+                >>"$STDOUT_LOG_PATH" 2>>"$STDERR_LOG_PATH" &
+            task_output $! "$STDERR_LOG_PATH" "Set Font Name & Size"
+        fi
+
+
+        DEFAULT_SIZE_COLUMNS_SETTING="$TERMINAL_PROFILE_URI default-size-columns"
+        if [[ "$(gsettings get $DEFAULT_SIZE_COLUMNS_SETTING)" != "88" ]]
+        then
+            gsettings set $DEFAULT_SIZE_COLUMNS_SETTING 88 \
+                >>"$STDOUT_LOG_PATH" 2>>"$STDERR_LOG_PATH" &
+            task_output $! "$STDERR_LOG_PATH" "Set Terminal Size in Columns"
+        fi
+
+        DEFAULT_SIZE_ROWS_SETTING="$TERMINAL_PROFILE_URI default-size-rows"
+        if [[ "$(gsettings get $DEFAULT_SIZE_ROWS_SETTING)" != "20" ]]
+        then
+            gsettings set $DEFAULT_SIZE_ROWS_SETTING 20 \
+                >>"$STDOUT_LOG_PATH" 2>>"$STDERR_LOG_PATH" &
+            task_output $! "$STDERR_LOG_PATH" "Set Terminal Size in Rows"
+        fi
+
+        BELL_SETTING="$TERMINAL_PROFILE_URI audible-bell"
+        if [[ "$(gsettings get $BELL_SETTING)" != "false" ]]
+        then
+            gsettings set $BELL_SETTING false >>"$STDOUT_LOG_PATH" 2>>"$STDERR_LOG_PATH" &
+            task_output $! "$STDERR_LOG_PATH" "Turn off the Terminal Bell"
+        fi
+    else
+        printf "\e[33m%s\e[0m\n" \
+            "[Skip] Failed to get terminal profile... skipping related commands"
+    fi
+
+    NEXT_TAB_URI="org.gnome.Terminal.Legacy.Keybindings:/org/gnome/terminal/legacy/keybindings/ next-tab"
+    if [[ "$(gsettings get $NEXT_TAB_URI)" != "'<Control>Return'" ]]
+    then
+        gsettings set $NEXT_TAB_URI '<Control>Return' \
+            >>"$STDOUT_LOG_PATH" 2>>"$STDERR_LOG_PATH" &
+        task_output $! "$STDERR_LOG_PATH" \
+            "Set Keybind: Switch to the Next Terminal Tab = <Control>Return"
+    fi
+
+    PREVIOUS_TAB_URI="org.gnome.Terminal.Legacy.Keybindings:/org/gnome/terminal/legacy/keybindings/ prev-tab"
+    if [[ "$(gsettings get $PREVIOUS_TAB_URI)" != "'<Control>BackSpace'" ]]
+    then
+        gsettings set $PREVIOUS_TAB_URI '<Control>BackSpace' \
+            >>"$STDOUT_LOG_PATH" 2>>"$STDERR_LOG_PATH" &
+        task_output $! "$STDERR_LOG_PATH" \
+            "Set Keybind: Switch to the Previous Terminal Tab = <Control>BackSpace"
+    fi
+
+    return 0
+}
+
 configure_tool()
 {
     local tool="$1"
@@ -192,3 +361,4 @@ configure_bashrc_secrets
 configure_vim
 configure_vim_plug
 configure_git
+configure_gnome
