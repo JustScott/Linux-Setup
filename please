@@ -936,7 +936,6 @@ case $1 in
         bash $CONFIG_INSTALL_SCRIPT
     ;;
     "add-configs")
-        check_packages || exit $?
         bash $CONFIG_INSTALL_SCRIPT
     ;;
     "version"|"--version") echo "0.1.0";;
