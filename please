@@ -29,13 +29,16 @@ REQUIRED_PACKAGES=(
     usermod gpasswd groups groupadd groupdel
 )
 
-PRETTY_OUTPUT_LIBRARY="${linux_setup_directory}/GeneralLibraries/pretty_output_library.sh"
-
-if ! source "$PRETTY_OUTPUT_LIBRARY" &>/dev/null
+if ! [[ "$@" =~ "add-please-to-path" ]]
 then
-    printf "\n\e[31m%s\e[0m %s\n" "[Error]" \
-        "Couldn't source '$PRETTY_OUTPUT_LIBRARY', this shouldn't happen. Stopping."
-    exit 1
+    PRETTY_OUTPUT_LIBRARY="${linux_setup_directory}/GeneralLibraries/pretty_output_library.sh"
+
+    if ! source "$PRETTY_OUTPUT_LIBRARY" &>/dev/null
+    then
+        printf "\n\e[31m%s\e[0m %s\n" "[Error]" \
+            "Couldn't source '$PRETTY_OUTPUT_LIBRARY', this shouldn't happen. Stopping."
+        exit 1
+    fi
 fi
 
 ARCH_SYSTEM=0
