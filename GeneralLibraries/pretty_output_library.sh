@@ -17,7 +17,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 STDOUT_LOG_PATH="/dev/null"
-STDERR_LOG_PATH="/tmp/linuxsetuperrors.log"
+STDERR_LOG_PATH="$HOME/.tmp/linuxsetuperrors.log"
+
+if ! [[ -d "$STDERR_LOG_PATH" ]]
+then
+    mkdir -p "$(dirname "$STDERR_LOG_PATH")"
+fi
 
 # Function to show a spinner and handle exit status
 task_output() {
