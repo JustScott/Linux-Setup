@@ -65,9 +65,9 @@ configure_bashrc_extension()
 configure_bashrc_secrets()
 {
     local secrets_path="\$HOME/.bashrc_secrets"
-    if ! grep "^source $secrets_path$" "${HOME}/.bashrc" &>/dev/null
+    if ! grep "^test -f $secrets_path && source $secrets_path$" "${HOME}/.bashrc" &>/dev/null
     then
-        echo "source $secrets_path" >> "${HOME}/.bashrc" 2>>"$STDERR_LOG_PATH" &
+        echo "test -f $secrets_path && source $secrets_path" >> "${HOME}/.bashrc" 2>>"$STDERR_LOG_PATH" &
         task_output $! "$STDERR_LOG_PATH" \
             "Source bashrc_extension in ${HOME}/.bashrc"
     fi
