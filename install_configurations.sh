@@ -317,6 +317,33 @@ configure_gnome()
     return 0
 }
 
+configure_bat()
+{
+    if ! [[ -d "${HOME}/.bin" ]]
+    then
+        printf "\n\e[31m%s\e[0m\n" \
+            "[ERROR] add-please-to-path should've created the $HOME/.bin" \
+            "directory, but it doesn't exist. This shouldn't happen."
+        return 1
+    fi
+
+    if ! command -v bat &>/dev/null
+    then
+        if command -v batcat &>/dev/null
+        then
+            if ! [[ -L "${HOME}/.bin/bat" ]]
+            then
+                ln -sf "$(command -v batcat)" "${HOME}/.bin/bat" \
+                    >>"$STDOUT_LOG_PATH" 2>>"$STDERR_LOG_PATH" &
+                task_output $! "$STDERR_LOG_PATH" \
+                    "soft link batcat to bat"
+            fi
+        fi
+    fi
+
+    return 0
+}
+
 configure_tool()
 {
     local tool="$1"
@@ -362,3 +389,4 @@ configure_vim
 configure_vim_plug
 configure_git
 configure_gnome
+configure_bat
