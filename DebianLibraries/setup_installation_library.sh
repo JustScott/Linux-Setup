@@ -30,6 +30,7 @@ BASE_PACKAGES=(
     vim neovim
     lf bat fzf ripgrep
     wget build-essential age
+    man-db
 )
 setup_base_packages()
 {
