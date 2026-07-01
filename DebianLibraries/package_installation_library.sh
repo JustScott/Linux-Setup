@@ -230,27 +230,27 @@ install_librewolf()
         sudo -v || return 1
 
         sudo apt-get update >>"$STDOUT_LOG_PATH" 2>>"$STDERR_LOG_PATH" &
-        task_output $! "$stderr_log_path" "Update apt"
+        task_output $! "$STDERR_LOG_PATH" "Update apt"
         [[ $? -ne 0 ]] && return 1
 
         sudo apt-get install extrepo --yes >>"$STDOUT_LOG_PATH" 2>>"$STDERR_LOG_PATH" &
-        task_output $! "$stderr_log_path" "Add extrepo (contains librewolf)"
+        task_output $! "$STDERR_LOG_PATH" "Add extrepo (contains librewolf)"
         [[ $? -ne 0 ]] && return 1
 
         sudo extrepo enable librewolf >>"$STDOUT_LOG_PATH" 2>>"$STDERR_LOG_PATH" &
-        task_output $! "$stderr_log_path" "Enable librewolf repo"
+        task_output $! "$STDERR_LOG_PATH" "Enable librewolf repo"
         [[ $? -ne 0 ]] && return 1
 
         sudo extrepo update librewolf >>"$STDOUT_LOG_PATH" 2>>"$STDERR_LOG_PATH" &
-        task_output $! "$stderr_log_path" "Update the librewolf repo"
+        task_output $! "$STDERR_LOG_PATH" "Update the librewolf repo"
         [[ $? -ne 0 ]] && return 1
 
         sudo apt-get update >>"$STDOUT_LOG_PATH" 2>>"$STDERR_LOG_PATH" &
-        task_output $! "$stderr_log_path" "Update apt again"
+        task_output $! "$STDERR_LOG_PATH" "Update apt again"
         [[ $? -ne 0 ]] && return 1
 
         sudo apt-get install librewolf --yes >>"$STDOUT_LOG_PATH" 2>>"$STDERR_LOG_PATH" &
-        task_output $! "$stderr_log_path" "Install librewolf"
+        task_output $! "$STDERR_LOG_PATH" "Install librewolf"
         [[ $? -ne 0 ]] && return 1
     fi
 
@@ -263,11 +263,97 @@ uninstall_librewolf()
         sudo -v || return 1
 
         sudo apt-get purge librewolf --yes >>"$STDOUT_LOG_PATH" 2>>"$STDERR_LOG_PATH" &
-        task_output $! "$stderr_log_path" "Purge librewolf from the system"
+        task_output $! "$STDERR_LOG_PATH" "Purge librewolf from the system"
         [[ $? -ne 0 ]] && return 1
 
         sudo extrepo disable librewolf >>"$STDOUT_LOG_PATH" 2>>"$STDERR_LOG_PATH" &
-        task_output $! "$stderr_log_path" "Disable librewolf from the extrepo"
+        task_output $! "$STDERR_LOG_PATH" "Disable librewolf from the extrepo"
+        [[ $? -ne 0 ]] && return 1
+    fi
+
+    return 0
+}
+
+install_mullvad_vpn()
+{
+    if ! dpkg -s mullvad-vpn &>/dev/null
+    then
+        sudo -v || return 1
+
+        sudo curl -fsSLo /usr/share/keyrings/mullvad-keyring.asc https://repository.mullvad.net/deb/mullvad-keyring.asc \
+            >>"$STDOUT_LOG_PATH" 2>>"$STDERR_LOG_PATH" &
+        task_output $! "$STDERR_LOG_PATH" "Download the mullvad-vpn signing key"
+        [[ $? -ne 0 ]] && return 1
+
+        echo "deb [signed-by=/usr/share/keyrings/mullvad-keyring.asc arch=$( dpkg --print-architecture )] https://repository.mullvad.net/deb/stable stable main" | sudo tee /etc/apt/sources.list.d/mullvad.list >>"$STDOUT_LOG_PATH" 2>>"$STDERR_LOG_PATH" &
+        task_output $! "$STDERR_LOG_PATH" "Add the mullvad-vpn repository to apt"
+        [[ $? -ne 0 ]] && return 1
+
+        sudo apt-get update >>"$STDOUT_LOG_PATH" 2>>"$STDERR_LOG_PATH" &
+        task_output $! "$STDERR_LOG_PATH" "Update apt"
+        [[ $? -ne 0 ]] && return 1
+
+        sudo apt-get install --yes mullvad-vpn >>"$STDOUT_LOG_PATH" 2>>"$STDERR_LOG_PATH" &
+        task_output $! "$STDERR_LOG_PATH" "Install mullvad-vpn"
+        [[ $? -ne 0 ]] && return 1
+
+        echo -e 'Unattended-Upgrade::Origins-Pattern {\n    "origin=repository.mullvad.net,codename=stable";\n};' \
+            | sudo tee /etc/apt/apt.conf.d/51mullvad-unattended >>"$STDOUT_LOG_PATH" 2>>"$STDERR_LOG_PATH" &
+        task_output $! "$STDERR_LOG_PATH" "Populate unattended-upgrades file for mullvad-vpn"
+        [[ $? -ne 0 ]] && return 1
+    fi
+
+    return 0
+}
+uninstall_mullvad_vpn()
+{
+    if dpkg -s mullvad-vpn &>/dev/null
+    then
+        sudo -v || return 1
+
+        if [[ -f "/etc/apt/apt.conf.d/51mullvad-unattended" ]]
+        then
+            sudo rm "/etc/apt/apt.conf.d/51mullvad-unattended" \
+                >>"$STDOUT_LOG_PATH" 2>>"$STDERR_LOG_PATH" &
+            task_output $! "$STDERR_LOG_PATH" "Remove the unattended-upgrades file for mullvad-vpn"
+            [[ $? -ne 0 ]] && return 1
+        fi
+
+        if systemctl is-active mullvad-daemon &>/dev/null
+        then
+            sudo systemctl stop mullvad-daemon \
+                >>"$STDOUT_LOG_PATH" 2>>"$STDERR_LOG_PATH" &
+            task_output $! "$STDERR_LOG_PATH" "Stop the systemd mullvad-daemon"
+            [[ $? -ne 0 ]] && return 1
+        fi
+
+        if systemctl is-enabled mullvad-daemon &>/dev/null
+        then
+            sudo systemctl disable mullvad-daemon >>"$STDOUT_LOG_PATH" 2>>"$STDERR_LOG_PATH" &
+            task_output $! "$STDERR_LOG_PATH" "Disable the systemd mullvad-daemon"
+            [[ $? -ne 0 ]] && return 1
+        fi
+
+        sudo apt-get purge --yes mullvad-vpn >>"$STDOUT_LOG_PATH" 2>>"$STDERR_LOG_PATH" &
+        task_output $! "$STDERR_LOG_PATH" "Purge mullvad-vpn from the system"
+        [[ $? -ne 0 ]] && return 1
+
+        if [[ -f "/usr/share/keyrings/mullvad-keyring.asc" ]]
+        then
+            sudo rm -f /usr/share/keyrings/mullvad-keyring.asc >>"$STDOUT_LOG_PATH" 2>>"$STDERR_LOG_PATH" &
+            task_output $! "$STDERR_LOG_PATH" "Remove the mullvad-vpn signing key"
+            [[ $? -ne 0 ]] && return 1
+        fi
+
+        if [[ -f "/etc/apt/sources.list.d/mullvad.list" ]]
+        then
+            sudo rm -f /etc/apt/sources.list.d/mullvad.list >>"$STDOUT_LOG_PATH" 2>>"$STDERR_LOG_PATH" &
+            task_output $! "$STDERR_LOG_PATH" "Remove the mullvad-vpn repository from apt"
+            [[ $? -ne 0 ]] && return 1
+        fi
+
+        sudo apt-get update >>"$STDOUT_LOG_PATH" 2>>"$STDERR_LOG_PATH" &
+        task_output $! "$STDERR_LOG_PATH" "Update apt"
         [[ $? -ne 0 ]] && return 1
     fi
 

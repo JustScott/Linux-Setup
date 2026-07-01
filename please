@@ -81,7 +81,7 @@ then
 elif ((DEBIAN_SYSTEM))
 then
     INSTALLABLE_PACKAGES+=(
-        librewolf
+        librewolf mullvad-vpn
     )
 
     PACKAGE_INSTALLATION_LIBRARY=./DebianLibraries/package_installation_library.sh
@@ -322,7 +322,7 @@ display_help() {
     printf "\n  \`$SCRIPT_NAME add-user-scripts-to-path \`"
     printf "\n  \`$SCRIPT_NAME install --list\`"
     printf "\n  \`$SCRIPT_NAME install qutebrowser\`"
-    printf "\n  \`$SCRIPT_NAME install librewolf\`"
+    printf "\n  \`$SCRIPT_NAME install librewolf mullvad-vpn\`"
     printf "\n  \`$SCRIPT_NAME install rust qemu docker\`"
     printf "\n  \`$SCRIPT_NAME uninstall qutebrowser\`"
     printf "\n  \`$SCRIPT_NAME setup base_packages gnome bluetooth\`"
@@ -444,6 +444,14 @@ install() {
                     exit 1
                 fi
             ;;
+            "mullvad-vpn")
+                if ! install_mullvad_vpn
+                then
+                    printf "\n\e[31m%s\e[0m\n" \
+                        "[!] Failed to install mullvad-vpn"
+                    exit 1
+                fi
+            ;;
             "docker")
                 if ! install_docker
                 then
@@ -549,6 +557,13 @@ uninstall() {
                 then
                     printf "\n\e[31m%s\e[0m\n" \
                         "[!] Failed to uninstall librewolf"
+                fi
+            ;;
+            "mullvad-vpn")
+                if ! uninstall_mullvad_vpn
+                then
+                    printf "\n\e[31m%s\e[0m\n" \
+                        "[!] Failed to uninstall mullvad-vpn"
                 fi
             ;;
             "docker")
