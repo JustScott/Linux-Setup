@@ -359,3 +359,79 @@ uninstall_mullvad_vpn()
 
     return 0
 }
+
+install_signal()
+{
+    if ! dpkg -s signal-desktop &>/dev/null
+    then
+        sudo -v || return 1
+
+        curl -fsSL https://updates.signal.org/desktop/apt/keys.asc \
+            | gpg --dearmor \
+            | sudo tee /usr/share/keyrings/signal-desktop-keyring.gpg \
+                >>"$STDOUT_LOG_PATH" 2>>"$STDERR_LOG_PATH" &
+        task_output $! "$STDERR_LOG_PATH" "Download the signal-desktop signing key"
+        [[ $? -ne 0 ]] && return 1
+
+        sudo curl -fsSLo /etc/apt/sources.list.d/signal-desktop.sources \
+            https://updates.signal.org/static/desktop/apt/signal-desktop.sources \
+            >>"$STDOUT_LOG_PATH" 2>>"$STDERR_LOG_PATH" &
+        task_output $! "$STDERR_LOG_PATH" "Add the signal-desktop repository to apt"
+        [[ $? -ne 0 ]] && return 1
+
+        sudo apt-get update >>"$STDOUT_LOG_PATH" 2>>"$STDERR_LOG_PATH" &
+        task_output $! "$STDERR_LOG_PATH" "Update apt"
+        [[ $? -ne 0 ]] && return 1
+
+        sudo apt-get install --yes signal-desktop >>"$STDOUT_LOG_PATH" 2>>"$STDERR_LOG_PATH" &
+        task_output $! "$STDERR_LOG_PATH" "Install signal-desktop"
+        [[ $? -ne 0 ]] && return 1
+
+        echo -e 'Unattended-Upgrade::Origins-Pattern {\n    "site=updates.signal.org";\n};' \
+            | sudo tee /etc/apt/apt.conf.d/51signal-unattended >>"$STDOUT_LOG_PATH" 2>>"$STDERR_LOG_PATH" &
+        task_output $! "$STDERR_LOG_PATH" "Populate unattended-upgrades file for signal-desktop"
+        [[ $? -ne 0 ]] && return 1
+    fi
+
+    return 0
+}
+
+uninstall_signal()
+{
+    if dpkg -s signal-desktop &>/dev/null
+    then
+        sudo -v || return 1
+
+        if [[ -f "/etc/apt/apt.conf.d/51signal-unattended" ]]
+        then
+            sudo rm "/etc/apt/apt.conf.d/51signal-unattended" \
+                >>"$STDOUT_LOG_PATH" 2>>"$STDERR_LOG_PATH" &
+            task_output $! "$STDERR_LOG_PATH" "Remove the unattended-upgrades file for signal-desktop"
+            [[ $? -ne 0 ]] && return 1
+        fi
+
+        sudo apt-get purge --yes signal-desktop >>"$STDOUT_LOG_PATH" 2>>"$STDERR_LOG_PATH" &
+        task_output $! "$STDERR_LOG_PATH" "Purge signal-desktop from the system"
+        [[ $? -ne 0 ]] && return 1
+
+        if [[ -f "/usr/share/keyrings/signal-desktop-keyring.gpg" ]]
+        then
+            sudo rm -f /usr/share/keyrings/signal-desktop-keyring.gpg >>"$STDOUT_LOG_PATH" 2>>"$STDERR_LOG_PATH" &
+            task_output $! "$STDERR_LOG_PATH" "Remove the signal-desktop signing key"
+            [[ $? -ne 0 ]] && return 1
+        fi
+
+        if [[ -f "/etc/apt/sources.list.d/signal-desktop.sources" ]]
+        then
+            sudo rm -f /etc/apt/sources.list.d/signal-desktop.sources >>"$STDOUT_LOG_PATH" 2>>"$STDERR_LOG_PATH" &
+            task_output $! "$STDERR_LOG_PATH" "Remove the signal-desktop repository from apt"
+            [[ $? -ne 0 ]] && return 1
+        fi
+
+        sudo apt-get update >>"$STDOUT_LOG_PATH" 2>>"$STDERR_LOG_PATH" &
+        task_output $! "$STDERR_LOG_PATH" "Update apt"
+        [[ $? -ne 0 ]] && return 1
+    fi
+
+    return 0
+}

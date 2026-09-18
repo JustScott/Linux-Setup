@@ -81,7 +81,7 @@ then
 elif ((DEBIAN_SYSTEM))
 then
     INSTALLABLE_PACKAGES+=(
-        librewolf mullvad-vpn
+        librewolf mullvad-vpn signal
     )
 
     SETUP_OPTIONS+=(
@@ -326,7 +326,7 @@ display_help() {
     printf "\n  \`$SCRIPT_NAME add-user-scripts-to-path \`"
     printf "\n  \`$SCRIPT_NAME install --list\`"
     printf "\n  \`$SCRIPT_NAME install qutebrowser\`"
-    printf "\n  \`$SCRIPT_NAME install librewolf mullvad-vpn\`"
+    printf "\n  \`$SCRIPT_NAME install librewolf mullvad-vpn signal\`"
     printf "\n  \`$SCRIPT_NAME install rust qemu docker\`"
     printf "\n  \`$SCRIPT_NAME uninstall qutebrowser\`"
     printf "\n  \`$SCRIPT_NAME setup base_packages gnome bluetooth\`"
@@ -456,6 +456,14 @@ install() {
                     exit 1
                 fi
             ;;
+            "signal")
+                if ! install_signal
+                then
+                    printf "\n\e[31m%s\e[0m\n" \
+                        "[!] Failed to install signal"
+                    exit 1
+                fi
+            ;;
             "docker")
                 if ! install_docker
                 then
@@ -568,6 +576,13 @@ uninstall() {
                 then
                     printf "\n\e[31m%s\e[0m\n" \
                         "[!] Failed to uninstall mullvad-vpn"
+                fi
+            ;;
+            "signal")
+                if ! uninstall_signal
+                then
+                    printf "\n\e[31m%s\e[0m\n" \
+                        "[!] Failed to uninstall signal"
                 fi
             ;;
             "docker")
